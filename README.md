@@ -11,5 +11,5 @@ node index.js
 
 ## Аргументы запуска
 ```bash
-node index.js [inputMusicPath] [email] [password]
+node index.js [PathToMusic] [email] [password]
 ```
