@@ -87,6 +87,7 @@ async function musicExists(title, artist) {
 
 let proccessedTracks = 0
 const dirContents = await fs.readdir(inputDir, { withFileTypes: true })
+let totalTracks = dirContents.length
 
 function calculateETA(tracks) {
   let totalSeconds = tracks * delay;
@@ -117,9 +118,10 @@ for (const content of dirContents) {
     const realPath = `${inputDir}/${content.name}`
     const { common: payload } = await parseFile(realPath)
 
-    if (!payload?.title || !payload?.artist) continue
+    if (!payload?.title || !payload?.artist) { totalTracks--; continue}
     if (await musicExists(payload.title, payload.artist)) {
         console.log(`${payload.artist} - ${payload.title} already exists`)
+        totalTracks--
         continue
     }
     console.log(`${payload.artist} - ${payload.title} uploading`)
@@ -138,17 +140,14 @@ for (const content of dirContents) {
     })
 
     if (status == 'error') {
-        if (message == "Добавлять музыку можно раз в 30 секунд") {
-            await new Promise(r=>setTimeout(r, delay * 1000))
-        } else {
-            console.log('Upload error: ' + message)
-            continue
-        }
+        console.log('Upload error: ' + message)
+        totalTracks--
+        continue
     }
     
     proccessedTracks++
-    console.log(`${payload.artist} - ${payload.title} uploaded ${proccessedTracks}/${dirContents.length}`)
-    console.log(`ETA: ${calculateETA(dirContents.length - proccessedTracks)}. Waiting ${delay} seconds...`)
+    console.log(`${payload.artist} - ${payload.title} uploaded ${proccessedTracks}/${totalTracks}`)
+    console.log(`ETA: ${calculateETA(totalTracks - proccessedTracks)}. Waiting ${delay} seconds...`)
     await new Promise(r=>setTimeout(r, delay * 1000))
 }
 
