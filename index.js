@@ -18,7 +18,7 @@ async function exists(path) {
     }
 }
 
-if (await exists(".env") && Object.keys(process.env) < 1) {
+if (await exists(".env") && !process.env?.session) {
     let envFile = await fs.readFile('.env', { encoding: 'utf-8' })
     for (const line of envFile.split("\n")) {
         const [k, v] = line.split('=')
@@ -53,14 +53,16 @@ async function auth() {
             console.log('Login error: ' + message)
             await auth()
         } else {
+            process.env.session = S_KEY
             await fs.writeFile('.env', `session=${S_KEY}`)
+            await auth()
         }
     }
 }
 
 await auth()
 
-async function search(title) {
+async function musicExists(title, artist) {
     const { status, message, results } = await send({
         type: "social",
         action: "search",
@@ -74,8 +76,13 @@ async function search(title) {
         return true
     }
 
-    if (results > 0) return true
-    return false
+    let result = false 
+    for (const song of results) {
+        if (song.artist == artist) {
+            result = true
+        }
+    }
+    return result
 }
 
 let proccessedTracks = 0
@@ -111,7 +118,7 @@ for (const content of dirContents) {
     const { common: payload } = await parseFile(realPath)
 
     if (!payload?.title || !payload?.artist) continue
-    if (search(payload.title)) {
+    if (await musicExists(payload.title, payload.artist)) {
         console.log(`${payload.artist} - ${payload.title} already exists`)
         continue
     }
@@ -131,13 +138,17 @@ for (const content of dirContents) {
     })
 
     if (status == 'error') {
-        console.log('Upload error: ' + message)
-        continue
+        if (message == "Добавлять музыку можно раз в 30 секунд") {
+            await new Promise(r=>setTimeout(r, delay * 1000))
+        } else {
+            console.log('Upload error: ' + message)
+            continue
+        }
     }
     
     proccessedTracks++
-    console.log(`${payload.artist} - ${payload.title} uploaded ${proccessedTracks}/${totalTracs}`)
-    console.log(`ETA: ${calculateETA(proccessedTracks)}. Waiting ${delay} seconds...`)
+    console.log(`${payload.artist} - ${payload.title} uploaded ${proccessedTracks}/${dirContents.length}`)
+    console.log(`ETA: ${calculateETA(dirContents.length - proccessedTracks)}. Waiting ${delay} seconds...`)
     await new Promise(r=>setTimeout(r, delay * 1000))
 }
 
