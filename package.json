@@ -1,0 +1,13 @@
+{
+  "name": "uploadmusictoelement",
+  "version": "1.0.0",
+  "description": "uploadmusictoelement",
+  "license": "ISC",
+  "author": "uasalt",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "msgpack-lite": "^0.1.26",
+    "music-metadata": "^11.12.1"
+  }
+}
